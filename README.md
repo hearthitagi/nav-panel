@@ -31,11 +31,11 @@ docker run -d \
 ```yaml
 # Docker 管理平台用户配置
 # 默认用户名: admin
-# 默认密码: navapp123
+# 默认密码: navpanel123
 
 users:
   admin:
-    password: navapp123  # 建议修改默认密码
+    password: navpanel123  # 建议修改默认密码
     role: admin      # 用户角色：admin 或 user 
 ```
 

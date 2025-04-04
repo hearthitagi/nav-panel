@@ -58,7 +58,7 @@ const CONTAINER_LINKS_PATH = path.join(CONFIG_PATH, 'container_links.yaml');
 const defaultAuthConfig = {
     users: {
         admin: {
-            password: 'navapp123'
+            password: 'navpanel123'
         }
     }
 };

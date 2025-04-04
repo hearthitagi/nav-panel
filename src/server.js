@@ -15,8 +15,6 @@ const dockerSocketPath = os.platform() === 'win32'
     ? '//./pipe/docker_engine'  // Windows 路径
     : '/var/run/docker.sock';   // Linux/Mac 路径
 
-console.log(`正在使用 Docker socket 路径: ${dockerSocketPath}`);
-
 const docker = new Docker({ 
     socketPath: dockerSocketPath,
     timeout: 30000, // 增加超时时间到 30 秒
@@ -36,12 +34,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
         res.set('Cache-Control', 'no-store');
     }
 }));
-
-// 添加调试中间件
-app.use((req, res, next) => {
-    console.log(`收到请求: ${req.method} ${req.url}`);
-    next();
-});
 
 app.use(express.json());
 
@@ -124,13 +116,11 @@ app.post('/login', (req, res) => {
 
 // 根路由重定向到 index.html
 app.get('/', (req, res) => {
-    console.log('访问根路由，重定向到 index.html');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // 添加登录页面路由
 app.get('/login.html', (req, res) => {
-    console.log('访问登录页面');
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
@@ -217,6 +207,4 @@ app.get('/container-links', authMiddleware, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-    console.log(`服务器运行在端口 ${PORT}`);
-}); 
+app.listen(PORT); 

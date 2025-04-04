@@ -25,7 +25,7 @@ async function build() {
         // 复制后端文件
         fs.cpSync('src/server.js', 'dist/server.js');
         
-        console.log('构建完成！');
+        // 构建完成
     } catch (error) {
         console.error('构建失败:', error);
         process.exit(1);

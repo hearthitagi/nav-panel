@@ -107,17 +107,27 @@
         }
 
         .control-btn {
-            background-color: rgba(0, 229, 255, 0.8);
-            color: #0F0F1A;
-        }
-
-        .control-btn[disabled] {
-            background-color: rgba(255, 61, 0, 0.8);
+            background-color: var(--success-color);
             color: #00E5FF;
         }
 
+        .control-btn[disabled] {
+            background-color: rgba(128, 128, 128, 0.8);
+            color: white;
+        }
+
+        .control-btn.stop-btn {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .control-btn.stop-btn[disabled] {
+            background-color: rgba(128, 128, 128, 0.8);
+            color: white;
+        }
+
         .config-btn {
-            background-color: rgba(0, 229, 255, 0.8);
+            background-color: rgba(255, 193, 7, 0.8);
             color: #0F0F1A;
         }
 
@@ -151,12 +161,12 @@
         }
 
         .start-btn {
-            background-color: var(--success-color);
-            color: white;
+            background-color: rgba(0, 255, 128, 0.8);
+            color: #0F0F1A;
         }
 
         .stop-btn {
-            background-color: var(--danger-color);
+            background-color: rgba(255, 61, 0, 0.8);
             color: white;
         }
 

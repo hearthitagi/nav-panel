@@ -54,6 +54,9 @@ function createContainerCard(container, linkInfo) {
     
     const controlBtn = card.querySelector('.control-btn');
     controlBtn.querySelector('span').textContent = isRunning ? '停止' : '启动';
+    if (isRunning) {
+        controlBtn.classList.add('stop-btn');
+    }
     controlBtn.onclick = () => controlContainer(container.id, isRunning ? 'stop' : 'start');
     
     card.querySelector('.config-btn').onclick = () => 

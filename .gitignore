@@ -32,3 +32,7 @@ pids
 # 其他
 coverage/
 *.pem 
+config/jwt.yaml
+config/auth.yaml
+config/container_links.yaml
+

@@ -7,6 +7,9 @@ import yaml from 'js-yaml';
 import fs from 'fs';
 import cors from 'cors';
 import basicAuth from 'express-basic-auth';
+import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
+import crypto from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -45,6 +48,7 @@ const CONFIG_PATH = process.env.NODE_ENV === 'development' || !process.env.NODE_
 // 确保配置文件路径正确
 const AUTH_CONFIG_PATH = path.join(CONFIG_PATH, 'auth.yaml');
 const CONTAINER_LINKS_PATH = path.join(CONFIG_PATH, 'container_links.yaml');
+const JWT_CONFIG_PATH = path.join(CONFIG_PATH, 'jwt.yaml');
 
 // 创建默认配置
 const defaultAuthConfig = {
@@ -58,7 +62,8 @@ const defaultAuthConfig = {
 // 确保配置文件存在
 const configs = [
     { path: AUTH_CONFIG_PATH, defaultContent: defaultAuthConfig },
-    { path: CONTAINER_LINKS_PATH, defaultContent: {} }
+    { path: CONTAINER_LINKS_PATH, defaultContent: {} },
+    { path: JWT_CONFIG_PATH, defaultContent: { secret: crypto.randomBytes(64).toString('hex') } }
 ];
 
 configs.forEach(({ path, defaultContent }) => {
@@ -90,6 +95,37 @@ const authMiddleware = basicAuth({
     }
 });
 
+// 加载 JWT 配置
+const jwtConfig = yaml.load(fs.readFileSync(JWT_CONFIG_PATH, 'utf8'));
+const JWT_SECRET = jwtConfig.secret;
+const JWT_EXPIRES_IN = '1d';
+
+// 创建 JWT 认证中间件
+const jwtAuthMiddleware = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: '未提供认证令牌' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: '无效的认证令牌' });
+    }
+};
+
+// 创建登录请求限制器
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15分钟
+    max: 5, // 限制每个IP 15分钟内最多5次请求
+    message: { error: '请求过于频繁，请稍后再试' }
+});
+
 // 错误处理函数
 const handleError = (res, err, message) => {
     console.error(message, err);
@@ -100,7 +136,7 @@ const handleError = (res, err, message) => {
 };
 
 // 登录路由
-app.post('/login', (req, res) => {
+app.post('/login', loginLimiter, (req, res) => {
     const { username, password } = req.body;
     const user = authConfig.users[username];
     
@@ -108,9 +144,25 @@ app.post('/login', (req, res) => {
         return res.status(401).json({ error: '用户名或密码错误' });
     }
     
+    // 生成 JWT token
+    const token = jwt.sign(
+        { username },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+    );
+    
     res.json({ 
         message: '登录成功',
+        token,
         user: { username }
+    });
+});
+
+// 添加一个测试接口来验证 JWT 是否正常工作
+app.get('/test-auth', jwtAuthMiddleware, (req, res) => {
+    res.json({ 
+        message: '认证成功',
+        user: req.user
     });
 });
 
@@ -125,7 +177,7 @@ app.get('/login.html', (req, res) => {
 });
 
 // 获取容器列表 - 需要认证
-app.get('/containers', authMiddleware, async (req, res) => {
+app.get('/containers', jwtAuthMiddleware, async (req, res) => {
     try {
         const containers = await docker.listContainers({ all: true });
         if (!Array.isArray(containers)) {
@@ -142,7 +194,7 @@ app.get('/containers', authMiddleware, async (req, res) => {
 });
 
 // 控制容器状态 - 需要认证
-app.post('/containers/:id/:action', authMiddleware, async (req, res) => {
+app.post('/containers/:id/:action', jwtAuthMiddleware, async (req, res) => {
     const container = docker.getContainer(req.params.id);
     try {
         if (req.params.action === 'start') await container.start();
@@ -154,7 +206,7 @@ app.post('/containers/:id/:action', authMiddleware, async (req, res) => {
 });
 
 // 更新容器启动连接配置
-app.post('/container-links', authMiddleware, async (req, res) => {
+app.post('/container-links', jwtAuthMiddleware, async (req, res) => {
     try {
         const { containerId, link } = req.body;
         const links = yaml.load(fs.readFileSync(CONTAINER_LINKS_PATH, 'utf8')) || {};
@@ -178,7 +230,7 @@ app.post('/container-links', authMiddleware, async (req, res) => {
 });
 
 // 获取容器启动连接配置
-app.get('/container-links', authMiddleware, async (req, res) => {
+app.get('/container-links', jwtAuthMiddleware, async (req, res) => {
     try {
         const links = yaml.load(fs.readFileSync(CONTAINER_LINKS_PATH, 'utf8')) || {};
         const validLinks = {};

@@ -1,18 +1,18 @@
 // 检查认证状态
-const auth = localStorage.getItem('auth');
-if (!auth) {
+const token = localStorage.getItem('token');
+if (!token) {
     window.location.href = '/login.html';
 }
 
 // 添加认证头到所有请求
 const headers = {
-    'Authorization': `Basic ${auth}`,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
 };
 
 // 防止通过浏览器返回按钮重新进入
 window.onpopstate = function(event) {
-    if (!localStorage.getItem('auth')) {
+    if (!localStorage.getItem('token')) {
         window.location.href = '/login.html';
     }
 };
@@ -165,7 +165,7 @@ window.onclick = event => {
 
 // 退出登录
 function logout() {
-    localStorage.removeItem('auth');
+    localStorage.removeItem('token');
     window.location.href = '/login.html';
 }
 

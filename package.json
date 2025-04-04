@@ -18,7 +18,9 @@
     "dockerode": "^4.0.5",
     "express": "^5.1.0",
     "express-basic-auth": "^1.2.1",
-    "js-yaml": "^4.1.0"
+    "express-rate-limit": "^7.5.0",
+    "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "esbuild": "^0.20.1",

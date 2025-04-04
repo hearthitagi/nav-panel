@@ -1,7 +1,0 @@
-# Docker 管理平台用户配置
-# 默认用户名: admin
-# 默认密码: navpanel123
-
-users:
-  admin:
-    password: navpanel123  # 建议修改默认密码 

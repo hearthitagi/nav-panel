@@ -163,9 +163,8 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    // 保存认证信息
-                    const auth = btoa(`${username}:${password}`);
-                    localStorage.setItem('auth', auth);
+                    // 保存 JWT token
+                    localStorage.setItem('token', data.token);
                     window.location.href = '/';
                 } else {
                     const errorDiv = document.getElementById('error');

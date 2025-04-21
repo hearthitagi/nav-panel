@@ -20,7 +20,9 @@
     "express-basic-auth": "^1.2.1",
     "express-rate-limit": "^7.5.0",
     "js-yaml": "^4.1.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsdom": "^26.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
     "esbuild": "^0.20.1",

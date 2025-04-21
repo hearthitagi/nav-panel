@@ -10,6 +10,8 @@ import basicAuth from 'express-basic-auth';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
+import fetch from 'node-fetch';
+import jsdom from 'jsdom';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -48,6 +50,7 @@ const CONFIG_PATH = process.env.NODE_ENV === 'development' || !process.env.NODE_
 // 确保配置文件路径正确
 const AUTH_CONFIG_PATH = path.join(CONFIG_PATH, 'auth.yaml');
 const CONTAINER_LINKS_PATH = path.join(CONFIG_PATH, 'container_links.yaml');
+const WEBSITE_LINKS_PATH = path.join(CONFIG_PATH, 'website_links.yaml');
 const JWT_CONFIG_PATH = path.join(CONFIG_PATH, 'jwt.yaml');
 
 // 创建默认配置
@@ -63,6 +66,7 @@ const defaultAuthConfig = {
 const configs = [
     { path: AUTH_CONFIG_PATH, defaultContent: defaultAuthConfig },
     { path: CONTAINER_LINKS_PATH, defaultContent: {} },
+    { path: WEBSITE_LINKS_PATH, defaultContent: {} },
     { path: JWT_CONFIG_PATH, defaultContent: { secret: crypto.randomBytes(64).toString('hex') } }
 ];
 
@@ -255,6 +259,83 @@ app.get('/container-links', jwtAuthMiddleware, async (req, res) => {
         res.json(validLinks);
     } catch (err) {
         handleError(res, err, '读取容器链接配置失败');
+    }
+});
+
+// 获取网站信息
+app.get('/api/website-info', jwtAuthMiddleware, async (req, res) => {
+    try {
+        const { url } = req.query;
+        if (!url) {
+            return res.status(400).json({ error: '缺少URL参数' });
+        }
+
+        const response = await fetch(url);
+        const html = await response.text();
+        const dom = new jsdom.JSDOM(html);
+        const document = dom.window.document;
+
+        // 获取网站标题
+        const title = document.querySelector('title')?.textContent || '未知网站';
+
+        // 获取网站图标
+        let icon = null;
+        const iconElement = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+        if (iconElement) {
+            const iconUrl = new URL(iconElement.href, url).toString();
+            icon = iconUrl;
+        }
+
+        res.json({ title, icon });
+    } catch (error) {
+        console.error('获取网站信息失败:', error);
+        res.status(500).json({ error: '获取网站信息失败' });
+    }
+});
+
+// 获取网站列表
+app.get('/website-links', jwtAuthMiddleware, async (req, res) => {
+    try {
+        const links = yaml.load(fs.readFileSync(WEBSITE_LINKS_PATH, 'utf8')) || {};
+        res.json(links);
+    } catch (error) {
+        console.error('读取网站链接配置失败:', error);
+        res.status(500).json({ error: '读取网站链接配置失败' });
+    }
+});
+
+// 保存网站链接
+app.post('/website-links', jwtAuthMiddleware, async (req, res) => {
+    try {
+        const { url, title, icon } = req.body;
+        const links = yaml.load(fs.readFileSync(WEBSITE_LINKS_PATH, 'utf8')) || {};
+        
+        links[url] = { title, icon };
+        
+        fs.writeFileSync(WEBSITE_LINKS_PATH, yaml.dump(links));
+        res.sendStatus(200);
+    } catch (error) {
+        console.error('保存网站链接配置失败:', error);
+        res.status(500).json({ error: '保存网站链接配置失败' });
+    }
+});
+
+// 删除网站链接
+app.delete('/website-links', jwtAuthMiddleware, async (req, res) => {
+    try {
+        const { url } = req.body;
+        const links = yaml.load(fs.readFileSync(WEBSITE_LINKS_PATH, 'utf8')) || {};
+        
+        if (links[url]) {
+            delete links[url];
+            fs.writeFileSync(WEBSITE_LINKS_PATH, yaml.dump(links));
+            res.sendStatus(200);
+        } else {
+            res.status(404).json({ error: '网站不存在' });
+        }
+    } catch (error) {
+        console.error('删除网站链接配置失败:', error);
+        res.status(500).json({ error: '删除网站链接配置失败' });
     }
 });
 
